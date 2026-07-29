@@ -1,11 +1,17 @@
-.PHONY: setup run test-unit test-integration test-all lint format typecheck check migrate seed reset-db eval clean
+.PHONY: setup run test-unit test-integration test-all lint format typecheck check migrate seed reset-db eval clean help
 
-SHELL := /bin/bash
-
-# Detect Windows (Git Bash) vs Unix
+# Detect Windows (Git Bash) vs Unix.
+# GnuWin32 make (3.81) on Windows does not use the shell for recipe lines that
+# contain no shell metacharacters; it calls CreateProcess directly. That fails for
+# relative paths with forward slashes and for scripts without an .exe extension.
+# Prefixing each non-shell recipe line with `:; ` forces GnuWin32 make to invoke
+# the configured shell, where bash resolves the forward-slash paths and .exe
+# suffixes correctly. On Unix the prefix is harmless.
 ifeq ($(OS),Windows_NT)
+  SHELL := C:/PROGRA~1/Git/usr/bin/bash.exe
   VENV_BIN := .venv/Scripts
 else
+  SHELL := /bin/bash
   VENV_BIN := .venv/bin
 endif
 
@@ -16,13 +22,13 @@ PYTEST := $(VENV_BIN)/pytest
 # ---- Setup ----
 
 setup: ## First-time setup: venv, deps, migrations, seed data
-	python -m venv .venv || python3 -m venv .venv
-	$(PYTHON) -m pip install --upgrade pip setuptools wheel
-	$(PIP) install -e ".[dev]"
-	$(VENV_BIN)/pre-commit install
-	$(VENV_BIN)/alembic upgrade head
-	$(PYTHON) scripts/seed_db.py
-	cd frontend && npm install
+	:; python -m venv .venv || python3 -m venv .venv
+	:; $(PYTHON) -m pip install --upgrade pip setuptools wheel
+	:; $(PIP) install -e ".[dev]"
+	:; $(VENV_BIN)/pre-commit install
+	:; $(VENV_BIN)/alembic upgrade head
+	:; $(PYTHON) scripts/seed_db.py
+	:; cd frontend && npm install
 	@echo ""
 	@echo "Setup complete. Run 'make run' to start the application."
 
@@ -37,45 +43,45 @@ run: ## Start backend + frontend dev servers
 # ---- Tests ----
 
 test-unit: ## Run unit tests only (~30 seconds)
-	$(PYTEST) tests/unit -v -m unit
+	:; $(PYTEST) tests/unit -v -m unit
 
 test-integration: ## Run integration tests only
-	$(PYTEST) tests/integration -v -m integration
+	:; $(PYTEST) tests/integration -v -m integration
 
 test-all: ## Run full test suite
-	$(PYTEST) tests/ -v
+	:; $(PYTEST) tests/ -v
 
 # ---- Code Quality ----
 
 lint: ## Run ruff linter
-	$(VENV_BIN)/ruff check .
+	:; $(VENV_BIN)/ruff check .
 
 format: ## Run black formatter
-	$(VENV_BIN)/black .
+	:; $(VENV_BIN)/black .
 
 typecheck: ## Run mypy type checker
-	$(VENV_BIN)/mypy api/ core/ ingestion/ rag/ agent/ safety/
+	:; $(VENV_BIN)/mypy api/ core/ ingestion/ rag/ agent/ safety/
 
 check: lint format typecheck ## Run lint + format + typecheck
 
 # ---- Database ----
 
 migrate: ## Run pending database migrations
-	$(VENV_BIN)/alembic upgrade head
+	:; $(VENV_BIN)/alembic upgrade head
 
 seed: ## Re-seed the database with sample data
-	$(PYTHON) scripts/seed_db.py
+	:; $(PYTHON) scripts/seed_db.py
 
 reset-db: ## Drop and recreate the development database
-	docker compose exec db psql -U pathreview -d postgres -c "DROP DATABASE IF EXISTS pathreview_dev;"
-	docker compose exec db psql -U pathreview -d postgres -c "CREATE DATABASE pathreview_dev;"
-	$(VENV_BIN)/alembic upgrade head
-	$(PYTHON) scripts/seed_db.py
+	:; docker compose exec db psql -U pathreview -d postgres -c "DROP DATABASE IF EXISTS pathreview_dev;"
+	:; docker compose exec db psql -U pathreview -d postgres -c "CREATE DATABASE pathreview_dev;"
+	:; $(VENV_BIN)/alembic upgrade head
+	:; $(PYTHON) scripts/seed_db.py
 
 # ---- Evaluation ----
 
 eval: ## Run the RAG evaluation suite
-	$(PYTHON) scripts/run_evals.py
+	:; $(PYTHON) scripts/run_evals.py
 
 # ---- Cleanup ----
 
