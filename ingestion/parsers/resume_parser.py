@@ -5,7 +5,6 @@ from pypdf import PdfReader
 
 from .base import BaseParser, ParseResult
 
-
 SECTION_HEADERS = {
     "experience",
     "education",
@@ -74,8 +73,8 @@ class ResumeParser(BaseParser):
                 metadata=metadata,
                 source_type="resume",
             )
-        except Exception as e:
-            raise ValueError(f"Failed to parse PDF: {str(e)}")
+        except Exception as err:
+            raise ValueError(f"Failed to parse PDF: {str(err)}") from err
 
     def _parse_markdown(self, content: str) -> ParseResult:
         """Extract text from markdown resume, stripping markdown syntax."""
@@ -130,12 +129,12 @@ class ResumeParser(BaseParser):
         text_lower = text.lower()
 
         for section in SECTION_HEADERS:
-            # Look for section header patterns
+            # Look for section header patterns (allow leading whitespace)
             patterns = [
-                rf"^{re.escape(section)}\s*$",
-                rf"^{re.escape(section)}\s*[:|-]",
-                rf"\n{re.escape(section)}\s*$",
-                rf"\n{re.escape(section)}\s*[:|-]",
+                rf"^\s*{re.escape(section)}\s*$",
+                rf"^\s*{re.escape(section)}\s*[:|-]",
+                rf"\n\s*{re.escape(section)}\s*$",
+                rf"\n\s*{re.escape(section)}\s*[:|-]",
             ]
 
             for pattern in patterns:
